@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Wifi Manager</string>
+    <string name="wifi_manager">Wifi Manager</string>
+    <string name="on_off">On/Off</string>
+    <string name="start_scan">Start Scan</string>
+    <string name="about">About</string>
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="about_wifi_manager">About Wifi Manager</string>
+    <string name="connection_status_will_appear_here">Connection status will appear here</string>
+    <string name="connected_network">Connected Network</string>
+    <string name="forget">Forget</string>
+    <string name="disconnect">Disconnect</string>
+    <string name="ssid">SSID</string>
+    <string name="signal_strength">Signal Strength</string>
+    <string name="connect">Connect</string>
+    <string name="register_connection">Register Connection</string>
+    <string name="hello_world">Hello World</string>
+    <string name="registered_connection">Registered Connection</string>
+    <string name="wifi_status">WiFi Status:</string>
+    <string name="available_networks">available networks</string>
+    <string name="password">Password</string>
+    <string name="enter_psk_password">Enter PSK (Password)</string>
+    <string name="enter_password">Enter Password</string>
+    <string name="delete">Delete</string>
+</resources>
