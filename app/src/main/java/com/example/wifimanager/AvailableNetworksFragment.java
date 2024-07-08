@@ -11,6 +11,7 @@ import android.content.pm.PackageManager;
 import android.net.NetworkInfo;
 import android.net.wifi.ScanResult;
 import android.net.wifi.WifiConfiguration;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Handler;
@@ -29,7 +30,9 @@ import androidx.annotation.Nullable;
 import androidx.core.app.ActivityCompat;
 import androidx.fragment.app.Fragment;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public class AvailableNetworksFragment extends Fragment {
 
@@ -39,6 +42,7 @@ public class AvailableNetworksFragment extends Fragment {
     private Handler handler;
     private Runnable scanRunnable;
     private String targetSSID;
+    private boolean isConnecting = false;
 
     public AvailableNetworksFragment() {
         // Required empty public constructor
@@ -106,10 +110,11 @@ public class AvailableNetworksFragment extends Fragment {
     private void scanWifiNetworks() {
         wifiManager.startScan();
         List<ScanResult> results = wifiManager.getScanResults();
+        Set<String> ssidSet = new HashSet<>();
         adapter.clear();
         for (ScanResult result : results) {
-            // Filter out networks with empty SSID and add only SSIDs
-            if (result.SSID != null && !result.SSID.isEmpty()) {
+            // Filter out networks with empty SSID and add only unique SSIDs
+            if (result.SSID != null && !result.SSID.isEmpty() && ssidSet.add(result.SSID)) {
                 adapter.add(result.SSID);
             }
         }
@@ -141,6 +146,8 @@ public class AvailableNetworksFragment extends Fragment {
                     wifiManager.enableNetwork(config.networkId, true);
                     wifiManager.reconnect();
                     Toast.makeText(requireContext(), "Connecting to " + ssid, Toast.LENGTH_SHORT).show();
+                    isConnecting = true;
+                    handler.postDelayed(checkConnectionRunnable, 5000); // Check connection status after 10 seconds
                     return;
                 }
             }
@@ -167,6 +174,7 @@ public class AvailableNetworksFragment extends Fragment {
             String psk = editTextPassword.getText().toString().trim();
             if (psk.isEmpty()) {
                 Toast.makeText(requireContext(), "Password cannot be empty", Toast.LENGTH_SHORT).show();
+
             } else {
                 connectToWifi(ssid, psk);
             }
@@ -194,8 +202,24 @@ public class AvailableNetworksFragment extends Fragment {
             return;
         }
         wifiManager.reconnect();
+        isConnecting = true;
+        handler.postDelayed(checkConnectionRunnable, 10000); // Check connection status after 10 seconds
         Toast.makeText(requireContext(), "Connecting to " + ssid, Toast.LENGTH_SHORT).show();
     }
+
+    private final Runnable checkConnectionRunnable = new Runnable() {
+        @Override
+        public void run() {
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            String connectedSSID = wifiInfo.getSSID();
+            NetworkInfo.DetailedState detailedState = WifiInfo.getDetailedStateOf(wifiInfo.getSupplicantState());
+            if (isConnecting && (!connectedSSID.equals("\"" + targetSSID + "\"") || detailedState == NetworkInfo.DetailedState.FAILED)) {
+                // Not connected to the desired SSID, show PSK dialog again
+                Toast.makeText(requireContext(), "Failed to connect to " + targetSSID + ". Please try again.", Toast.LENGTH_SHORT).show();
+                showPskDialog(targetSSID);
+            }
+        }
+    };
 
     private final BroadcastReceiver wifiReceiver = new BroadcastReceiver() {
         @Override
@@ -203,9 +227,8 @@ public class AvailableNetworksFragment extends Fragment {
             NetworkInfo networkInfo = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
             if (networkInfo != null && networkInfo.isConnected()) {
                 String connectedSSID = wifiManager.getConnectionInfo().getSSID();
-                if (!connectedSSID.equals("\"" + targetSSID + "\"")) {
-                    // Not connected to the desired SSID, attempt to connect again
-                    attemptToConnect(targetSSID);
+                if (connectedSSID.equals("\"" + targetSSID + "\"")) {
+                    isConnecting = false; // Successfully connected to the desired network
                 }
             }
         }
